@@ -14,6 +14,7 @@ set(TEST_TARGETS
     shadps4_ngs2_test
     shadps4_gcn_test
     shadps4_video_core_test
+    shadps4_aliasing_test
 )
 
 set(SETTINGS_TEST_SOURCES
@@ -60,6 +61,11 @@ set(NGS2_TEST_SOURCES
 
     # Tests
     test_ngs2.cpp
+)
+set(ALIASING_TEST_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/video_core/texture_cache/aliasing.cpp
+    ${CMAKE_SOURCE_DIR}/src/video_core/texture_cache/host_compatibility.cpp
+    test_aliasing.cpp
 )
 set(GCN_TEST_SOURCES
     # Under test
@@ -164,6 +170,7 @@ add_executable(shadps4_settings_test ${SETTINGS_TEST_SOURCES})
 add_executable(shadps4_ngs2_test ${NGS2_TEST_SOURCES})
 add_executable(shadps4_gcn_test ${GCN_TEST_SOURCES})
 add_executable(shadps4_video_core_test ${VIDEO_CORE_TEST_SOURCES})
+add_executable(shadps4_aliasing_test ${ALIASING_TEST_SOURCES})
 
 foreach(t ${TEST_TARGETS})
     target_include_directories(${t} PRIVATE
@@ -206,6 +213,9 @@ target_link_libraries(shadps4_gcn_test PRIVATE
 target_link_libraries(shadps4_video_core_test PRIVATE
     GTest::gtest_main
     fmt::fmt
+target_link_libraries(shadps4_aliasing_test PRIVATE
+    GTest::gtest_main
+    Vulkan::Headers
     spdlog::spdlog
 )
 
