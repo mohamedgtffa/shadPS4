@@ -13,6 +13,7 @@ set(TEST_TARGETS
     shadps4_settings_test
     shadps4_ngs2_test
     shadps4_gcn_test
+    shadps4_presentation_queue_test
     shadps4_video_core_test
     shadps4_aliasing_test
 )
@@ -170,6 +171,7 @@ set(VIDEO_CORE_TEST_SOURCES
 add_executable(shadps4_settings_test ${SETTINGS_TEST_SOURCES})
 add_executable(shadps4_ngs2_test ${NGS2_TEST_SOURCES})
 add_executable(shadps4_gcn_test ${GCN_TEST_SOURCES})
+add_executable(shadps4_presentation_queue_test test_presentation_queue.cpp)
 add_executable(shadps4_video_core_test ${VIDEO_CORE_TEST_SOURCES})
 add_executable(shadps4_aliasing_test ${ALIASING_TEST_SOURCES})
 
@@ -212,6 +214,7 @@ target_link_libraries(shadps4_gcn_test PRIVATE
     spdlog::spdlog
     half::half
 )
+target_link_libraries(shadps4_presentation_queue_test PRIVATE GTest::gtest_main)
 target_link_libraries(shadps4_video_core_test PRIVATE
     GTest::gtest_main
     fmt::fmt
