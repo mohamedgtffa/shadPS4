@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+
 #include "common/debug.h"
 #include "core/emulator_settings.h"
 #include "core/memory.h"
@@ -38,7 +40,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_,
       buffer_cache{instance, scheduler, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
-      pipeline_cache{instance, scheduler, liverpool} {
+      pipeline_cache{instance, scheduler, liverpool},
+      predication{instance, scheduler, buffer_cache} {
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
@@ -214,6 +217,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
     UpdateDynamicState(pipeline, is_indexed);
+    const auto zpass_query = predication.PrepareDrawQuery();
+    const bool predicated = liverpool->IsPacketPredicated();
     scheduler.BeginRendering(state);
 
     const auto& vs_info = pipeline->GetStage(Shader::LogicalStage::Vertex);
@@ -222,6 +227,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
+    predication.BeginDraw(cmdbuf, zpass_query, predicated);
 
     if (is_indexed) {
         cmdbuf.drawIndexed(regs.num_indices, regs.num_instances.NumInstances(), 0,
@@ -231,6 +237,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
                     instance_offset);
     }
 
+    predication.EndDraw(cmdbuf, zpass_query, predicated);
     ResetBindings();
 }
 
@@ -282,6 +289,8 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
     UpdateDynamicState(pipeline, is_indexed);
+    const auto zpass_query = predication.PrepareDrawQuery();
+    const bool predicated = liverpool->IsPacketPredicated();
     scheduler.BeginRendering(state);
 
     // We can safely ignore both SGPR UD indices and results of fetch shader parsing, as vertex and
@@ -289,6 +298,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
+    predication.BeginDraw(cmdbuf, zpass_query, predicated);
 
     if (is_indexed) {
         ASSERT(sizeof(VkDrawIndexedIndirectCommand) == stride);
@@ -310,6 +320,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         }
     }
 
+    predication.EndDraw(cmdbuf, zpass_query, predicated);
     ResetBindings();
 }
 
@@ -336,9 +347,12 @@ void Rasterizer::DispatchDirect() {
     scheduler.EndRendering();
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
+    const bool predicated = liverpool->IsPacketPredicated();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+    predication.BeginDraw(cmdbuf, std::nullopt, predicated);
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
+    predication.EndDraw(cmdbuf, std::nullopt, predicated);
 
     ResetBindings();
 }
@@ -368,9 +382,12 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     scheduler.EndRendering();
     pipeline->BindResources(set_writes, buffer_barriers, push_data);
 
+    const bool predicated = liverpool->IsPacketPredicated();
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+    predication.BeginDraw(cmdbuf, std::nullopt, predicated);
     cmdbuf.dispatchIndirect(buffer->Handle(), base);
+    predication.EndDraw(cmdbuf, std::nullopt, predicated);
 
     ResetBindings();
 }
