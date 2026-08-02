@@ -205,6 +205,7 @@ bool Instance::CreateDevice() {
                           vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
                           vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT,
                           vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
+                          vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -345,6 +346,9 @@ bool Instance::CreateDevice() {
                  conditional_rendering_features.conditionalRendering);
     }
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+    swapchain_maintenance1 = add_extension(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME) &&
+                             feature_chain.get<vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT>()
+                                 .swapchainMaintenance1;
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
 
@@ -514,6 +518,8 @@ bool Instance::CreateDevice() {
         },
         vk::PhysicalDeviceConditionalRenderingFeaturesEXT{
             .conditionalRendering = true,
+        vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT{
+            .swapchainMaintenance1 = true,
         },
     };
 
@@ -562,6 +568,8 @@ bool Instance::CreateDevice() {
     }
     if (!conditional_rendering) {
         device_chain.unlink<vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
+    if (!swapchain_maintenance1) {
+        device_chain.unlink<vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
