@@ -204,7 +204,6 @@ bool Instance::CreateDevice() {
                           vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
                           vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
                           vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT,
-                          vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
                           vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT>();
     features = feature_chain.get().features;
 
@@ -337,14 +336,6 @@ bool Instance::CreateDevice() {
                  image_2d_view_of_3d_features.sampler2DViewOf3D);
     }
     image_view_min_lod = add_extension(VK_EXT_IMAGE_VIEW_MIN_LOD_EXTENSION_NAME);
-    conditional_rendering = add_extension(VK_EXT_CONDITIONAL_RENDERING_EXTENSION_NAME);
-    if (conditional_rendering) {
-        const auto conditional_rendering_features =
-            feature_chain.get<vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
-        conditional_rendering = conditional_rendering_features.conditionalRendering;
-        LOG_INFO(Render_Vulkan, "- conditionalRendering: {}",
-                 conditional_rendering_features.conditionalRendering);
-    }
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
     swapchain_maintenance1 = add_extension(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME) &&
                              feature_chain.get<vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT>()
@@ -516,8 +507,6 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceImageViewMinLodFeaturesEXT{
             .minLod = true,
         },
-        vk::PhysicalDeviceConditionalRenderingFeaturesEXT{
-            .conditionalRendering = true,
         vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT{
             .swapchainMaintenance1 = true,
         },
@@ -566,8 +555,6 @@ bool Instance::CreateDevice() {
     if (!image_view_min_lod) {
         device_chain.unlink<vk::PhysicalDeviceImageViewMinLodFeaturesEXT>();
     }
-    if (!conditional_rendering) {
-        device_chain.unlink<vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
     if (!swapchain_maintenance1) {
         device_chain.unlink<vk::PhysicalDeviceSwapchainMaintenance1FeaturesEXT>();
     }
