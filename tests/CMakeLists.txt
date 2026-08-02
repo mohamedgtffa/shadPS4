@@ -13,6 +13,8 @@ set(TEST_TARGETS
     shadps4_settings_test
     shadps4_ngs2_test
     shadps4_gcn_test
+    shadps4_presentation_queue_test
+    shadps4_video_core_test
     shadps4_aliasing_test
 )
 
@@ -36,6 +38,7 @@ set(SETTINGS_TEST_SOURCES
 
     # Tests
     test_emulator_settings.cpp
+    test_storage_config.cpp
 )
 
 set(NGS2_TEST_SOURCES
@@ -161,9 +164,15 @@ set(GCN_TEST_SOURCES
     gcn/test_gcn_instructions.cpp
 )
 
+set(VIDEO_CORE_TEST_SOURCES
+    test_depth_stencil_state.cpp
+)
+
 add_executable(shadps4_settings_test ${SETTINGS_TEST_SOURCES})
 add_executable(shadps4_ngs2_test ${NGS2_TEST_SOURCES})
 add_executable(shadps4_gcn_test ${GCN_TEST_SOURCES})
+add_executable(shadps4_presentation_queue_test test_presentation_queue.cpp)
+add_executable(shadps4_video_core_test ${VIDEO_CORE_TEST_SOURCES})
 add_executable(shadps4_aliasing_test ${ALIASING_TEST_SOURCES})
 
 foreach(t ${TEST_TARGETS})
@@ -180,6 +189,7 @@ target_link_libraries(shadps4_settings_test PRIVATE
     fmt::fmt
     nlohmann_json::nlohmann_json
     toml11::toml11
+    Boost::headers
     SDL3::SDL3
     spdlog::spdlog
 )
@@ -204,6 +214,10 @@ target_link_libraries(shadps4_gcn_test PRIVATE
     spdlog::spdlog
     half::half
 )
+target_link_libraries(shadps4_presentation_queue_test PRIVATE GTest::gtest_main)
+target_link_libraries(shadps4_video_core_test PRIVATE
+    GTest::gtest_main
+    fmt::fmt
 target_link_libraries(shadps4_aliasing_test PRIVATE
     GTest::gtest_main
     Vulkan::Headers
