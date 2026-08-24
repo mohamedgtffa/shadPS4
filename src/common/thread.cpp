@@ -283,11 +283,13 @@ std::string_view GetCurrentThreadNameView() {
         return current_thread_name;
     }
 #ifdef _WIN32
-    PWSTR name = nullptr;
-    if (SUCCEEDED(GetThreadDescription(GetCurrentThread(), &name)) && name != nullptr) {
-        current_thread_name = Common::UTF16ToUTF8(name);
-        LocalFree(name);
+    PWSTR name{};
+    if (FAILED(GetThreadDescription(GetCurrentThread(), &name)) || name == nullptr) {
+        return "<unknown name>";
     }
+    const auto result = Common::UTF16ToUTF8(name);
+    LocalFree(name);
+    return result;
 #else
     char name[256];
     if (pthread_getname_np(pthread_self(), name, sizeof(name)) == 0) {
